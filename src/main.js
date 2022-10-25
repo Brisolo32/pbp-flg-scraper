@@ -1,62 +1,48 @@
 // Imports
-import { load } from "cheerio"
-import getUrls from 'get-urls'
-import fetch from 'node-fetch'
-import fs from 'node:fs'
+const { load } = require("cheerio")
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fs = require('fs-extra')
 
-main() // fucking piece of shit no one likes you you fucking piece of shit
-       // that wasn't directed at you that was directed at that main func
+main() // Express all your hate to this main function
 
 async function scrapeMagnets(url, cacheLoc) {
     // Checks if the cache file exists
     if (!fs.existsSync(cacheLoc)) {
-        const urls = Array.from(getUrls(url))
+        const res = await fetch(url)
+        const html = await res.text();
+        
+        const $ = load(html) // jQuery
+        const data = {
+            "requests": [
+                {
+                    name: $('.title').first().text(),
+                    fileSize: $('p[style="text-align: center;"]').children('em').text().replace("File Size: ", ""),
+                    magnet: $('.nv-content-wrap p a[href*="magnet:?"]').attr('href')
+                }
+            ]
+        }
+        
+        console.log(data)
+        // Writes the data json to a file located at the cache location defined by the user
+        fs.writeFileSync(cacheLoc, JSON.stringify(data))
+    } else {        
+        // Same thing as the other but this time it pushes the data to the same json
+        const existingFile = JSON.parse(fs.readFileSync(cacheLoc))
+        
+        const res = await fetch(url)
+        const html = await res.text();
+        
+        const $ = load(html)
+        const data = {
+            name: $('.title').first().text(),
+            fileSize: $('p[style="text-align: center;"]').children('em').text().replace("File Size: ", ""),
+            magnet: $('.nv-content-wrap p a[href*="magnet:?"]').attr('href')
+        }
 
-        const requests = urls.map(async url => {
-            const res = await fetch(url)
-            const html = await res.text();
-            
-            const $ = load(html) // jQuery
-            const data = {
-                "requests": [
-                    {
-                        // Name of the game ( EX: Terraria (1.4.0.8) )
-                        name: $('.title').first().text(),
-                        
-                        // Game size ( EX: 683 MB )
-                        fileSize: $('p[style="text-align: center;"]').children('em').text().replace("File Size: ", ""),
-
-                        // Magnet link ( Torrent... )
-                        magnet: $('.nv-content-wrap p a[href*="magnet:?"]').attr('href')
-                    }
-                ]
-            }
-            
-            // Writes the data json to a file located at the cache location defined by the user
-            fs.writeFileSync(cacheLoc, JSON.stringify(data))
-        })
-    } else {
-        const urls = Array.from(getUrls(url))
-        const requests = urls.map(async url => {
-            // Same thing as the other but this time it pushes the data to the same json
-
-            const existingFile = JSON.parse(fs.readFileSync(cacheLoc))
-
-            const res = await fetch(url)
-            const html = await res.text();
-    
-            const $ = load(html)
-            const data = {
-                name: $('.title').first().text(),
-                fileSize: $('p[style="text-align: center;"]').children('em').text().replace("File Size: ", ""),
-                magnet: $('.nv-content-wrap p a[href*="magnet:?"]').attr('href')
-            }
-
-            //            |
-            // Right here V
-            existingFile.requests.push(data)
-            fs.writeFileSync(cacheLoc, JSON.stringify(existingFile))
-        })
+        //            |
+        // Right here v
+        existingFile.requests.push(data)
+        fs.writeFileSync(cacheLoc, JSON.stringify(existingFile))
     }
 }
 
