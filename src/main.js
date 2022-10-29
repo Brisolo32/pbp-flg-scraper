@@ -12,19 +12,25 @@ async function scrapeMagnets(url, cacheLoc) {
         const html = await res.text();
         
         const $ = load(html) // jQuery
-        const data = {
-            "requests": [
-                {
-                    name: $('.title').first().text(),
-                    fileSize: $('p[style="text-align: center;"]').children('em').text().replace("File Size: ", ""),
-                    magnet: $('.nv-content-wrap p a[href*="magnet:?"]').attr('href')
-                }
-            ]
+
+        // Error checking
+        if ($('.nv-content-none-wrap p').text() == "It seems we can’t find what you’re looking for. Perhaps searching can help.") {
+            console.log("\nGame doesn't exist (perhaps you typed it wrong)")
+        } else {
+            const data = {
+                "requests": [
+                    {
+                        name: $('.title').first().text(),
+                        fileSize: $('p[style="text-align: center;"]').children('em').text().replace("File Size: ", ""),
+                        magnet: $('.nv-content-wrap p a[href*="magnet:?"]').attr('href')
+                    }
+                ]
+            }
+
+            console.log(data)
+            // Writes the data json to a file located at the cache location defined by the user
+            fs.writeFileSync(cacheLoc, JSON.stringify(data))
         }
-        
-        console.log(data)
-        // Writes the data json to a file located at the cache location defined by the user
-        fs.writeFileSync(cacheLoc, JSON.stringify(data))
     } else {        
         // Same thing as the other but this time it pushes the data to the same json
         const existingFile = JSON.parse(fs.readFileSync(cacheLoc))
