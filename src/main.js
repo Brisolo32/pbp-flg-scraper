@@ -39,16 +39,23 @@ async function scrapeMagnets(url, cacheLoc) {
         const html = await res.text();
         
         const $ = load(html)
-        const data = {
-            name: $('.title').first().text(),
-            fileSize: $('p[style="text-align: center;"]').children('em').text().replace("File Size: ", ""),
-            magnet: $('.nv-content-wrap p a[href*="magnet:?"]').attr('href')
-        }
+        
+        if ($('.nv-content-none-wrap p').text() == "It seems we can’t find what you’re looking for. Perhaps searching can help.") {
+            console.log("\nGame doesn't exist (perhaps you typed it wrong)")
+        } else {
+            const data = {
+                name: $('.title').first().text(),
+                fileSize: $('p[style="text-align: center;"]').children('em').text().replace("File Size: ", ""),
+                magnet: $('.nv-content-wrap p a[href*="magnet:?"]').attr('href')
+            }
 
-        //            |
-        // Right here v
-        existingFile.requests.push(data)
-        fs.writeFileSync(cacheLoc, JSON.stringify(existingFile))
+            console.log(data)
+            
+            //            |
+            // Right here v
+            existingFile.requests.push(data)
+            fs.writeFileSync(cacheLoc, JSON.stringify(existingFile))
+        }
     }
 }
 
